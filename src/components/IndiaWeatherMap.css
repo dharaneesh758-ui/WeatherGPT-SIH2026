@@ -1,0 +1,264 @@
+.india-weather-map {
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(120, 120, 120, 0.18);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(120, 120, 120, 0.15);
+}
+
+.map-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.map-header p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 540px;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  z-index: 1;
+}
+
+.map-layer-switcher {
+  display: flex;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(120, 120, 120, 0.12);
+}
+
+.map-layer-switcher button {
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.map-layer-switcher button:hover {
+  background: rgba(120, 120, 120, 0.12);
+}
+
+.map-layer-switcher button.active {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.map-status {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+}
+
+.map-location-card {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 500;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 14px;
+
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.14);
+}
+
+.location-card-icon {
+  font-size: 28px;
+}
+
+.map-location-card strong {
+  display: block;
+  font-size: 14px;
+}
+
+.map-location-card span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+/* Popup */
+
+.weather-popup {
+  min-width: 260px;
+}
+
+.weather-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weather-popup-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.weather-popup-header span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.weather-popup-icon {
+  font-size: 34px;
+}
+
+.weather-popup-temperature {
+  margin-top: 12px;
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.weather-popup-condition {
+  font-size: 13px;
+  margin-bottom: 14px;
+  opacity: 0.7;
+}
+
+.weather-popup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.weather-popup-grid div {
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(120, 120, 120, 0.08);
+}
+
+.weather-popup-grid span {
+  display: block;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.weather-popup-grid strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+/* Temperature rings */
+
+.temperature-ring {
+  animation: weatherPulse 2.5s infinite;
+}
+
+.temperature-core {
+  animation: weatherCorePulse 2s infinite;
+}
+
+@keyframes weatherPulse {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 0.08;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 0.25;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes weatherCorePulse {
+  0% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.12;
+  }
+
+  100% {
+    opacity: 0.35;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+  .map-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .map-wrapper {
+    height: 440px;
+  }
+
+  .map-layer-switcher {
+    width: 100%;
+  }
+
+  .map-layer-switcher button {
+    flex: 1;
+  }
+
+  .map-location-card {
+    left: 14px;
+    right: 14px;
+    bottom: 55px;
+  }
+}
