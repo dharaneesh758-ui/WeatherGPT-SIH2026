@@ -13,7 +13,7 @@ const PORT = 3001;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 if (!GROQ_API_KEY) {
-  throw new Error("GROQ_API_KEY is missing from .env");
+  throw new Error("GROQ_API_KEY is missing");
 }
 
 const groq = new Groq({
@@ -24,7 +24,12 @@ const AI_MODEL = "openai/gpt-oss-20b";
 const WHISPER_MODEL = "whisper-large-v3-turbo";
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+
+app.use(
+  express.json({
+    limit: "30mb",
+  })
+);
 
 // ============================================================
 // JSON RESPONSE PARSER
@@ -65,18 +70,25 @@ function parseJsonResponse(text: string): any | null {
 // ============================================================
 
 function detectLanguageLabel(language: string) {
-  const allowed = ["en", "ta", "hi", "tanglish", "mixed"];
+  const allowed = [
+    "en",
+    "ta",
+    "hi",
+    "tanglish",
+    "mixed",
+  ];
 
   return allowed.includes(language) ? language : "en";
 }
 
 // ============================================================
 // WEATHER SUMMARY
-// Keeps request small to avoid Groq TPM limit
 // ============================================================
 
 function createWeatherSummary(weather: any) {
-  if (!weather) return null;
+  if (!weather) {
+    return null;
+  }
 
   const current = weather.current;
   const hourly = weather.hourly;
@@ -92,16 +104,18 @@ function createWeatherSummary(weather: any) {
   if (hourly?.time?.length) {
     const now = new Date();
 
-    const foundIndex = hourly.time.findIndex((time: string) => {
-      const d = new Date(time);
+    const foundIndex = hourly.time.findIndex(
+      (time: string) => {
+        const d = new Date(time);
 
-      return (
-        d.getFullYear() === now.getFullYear() &&
-        d.getMonth() === now.getMonth() &&
-        d.getDate() === now.getDate() &&
-        d.getHours() === now.getHours()
-      );
-    });
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate() &&
+          d.getHours() === now.getHours()
+        );
+      }
+    );
 
     if (foundIndex >= 0) {
       currentHourIndex = foundIndex;
@@ -132,25 +146,29 @@ function createWeatherSummary(weather: any) {
             currentHourIndex + nextHoursCount
           ),
 
-        precipitation: hourly.precipitation?.slice(
-          currentHourIndex,
-          currentHourIndex + nextHoursCount
-        ),
+        precipitation:
+          hourly.precipitation?.slice(
+            currentHourIndex,
+            currentHourIndex + nextHoursCount
+          ),
 
-        weatherCode: hourly.weatherCode?.slice(
-          currentHourIndex,
-          currentHourIndex + nextHoursCount
-        ),
+        weatherCode:
+          hourly.weatherCode?.slice(
+            currentHourIndex,
+            currentHourIndex + nextHoursCount
+          ),
 
-        windSpeed: hourly.windSpeed?.slice(
-          currentHourIndex,
-          currentHourIndex + nextHoursCount
-        ),
+        windSpeed:
+          hourly.windSpeed?.slice(
+            currentHourIndex,
+            currentHourIndex + nextHoursCount
+          ),
 
-        windGusts: hourly.windGusts?.slice(
-          currentHourIndex,
-          currentHourIndex + nextHoursCount
-        ),
+        windGusts:
+          hourly.windGusts?.slice(
+            currentHourIndex,
+            currentHourIndex + nextHoursCount
+          ),
       }
     : null;
 
@@ -162,54 +180,92 @@ function createWeatherSummary(weather: any) {
 
   const dailySummary = daily
     ? {
-        time: daily.time?.slice(0, daysToKeep),
+        time: daily.time?.slice(
+          0,
+          daysToKeep
+        ),
 
-        weatherCode: daily.weatherCode?.slice(0, daysToKeep),
+        weatherCode:
+          daily.weatherCode?.slice(
+            0,
+            daysToKeep
+          ),
 
-        tempMax: daily.tempMax?.slice(0, daysToKeep),
+        tempMax:
+          daily.tempMax?.slice(
+            0,
+            daysToKeep
+          ),
 
-        tempMin: daily.tempMin?.slice(0, daysToKeep),
+        tempMin:
+          daily.tempMin?.slice(
+            0,
+            daysToKeep
+          ),
 
         precipitationProbability:
-          daily.precipitationProbability?.slice(0, daysToKeep),
+          daily.precipitationProbability?.slice(
+            0,
+            daysToKeep
+          ),
 
-        precipitationSum: daily.precipitationSum?.slice(
-          0,
-          daysToKeep
-        ),
+        precipitationSum:
+          daily.precipitationSum?.slice(
+            0,
+            daysToKeep
+          ),
 
-        windSpeedMax: daily.windSpeedMax?.slice(
-          0,
-          daysToKeep
-        ),
+        windSpeedMax:
+          daily.windSpeedMax?.slice(
+            0,
+            daysToKeep
+          ),
 
-        windGustsMax: daily.windGustsMax?.slice(
-          0,
-          daysToKeep
-        ),
+        windGustsMax:
+          daily.windGustsMax?.slice(
+            0,
+            daysToKeep
+          ),
 
-        uvIndexMax: daily.uvIndexMax?.slice(
-          0,
-          daysToKeep
-        ),
+        uvIndexMax:
+          daily.uvIndexMax?.slice(
+            0,
+            daysToKeep
+          ),
       }
     : null;
 
   // ----------------------------------------------------------
-  // Air quality
+  // Air Quality
   // ----------------------------------------------------------
 
   let airQualitySummary = null;
 
   if (airQuality) {
     airQualitySummary = {
-      pm10: airQuality.pm10?.slice(0, 3),
+      pm10:
+        airQuality.pm10?.slice(
+          0,
+          3
+        ),
 
-      pm2_5: airQuality.pm2_5?.slice(0, 3),
+      pm2_5:
+        airQuality.pm2_5?.slice(
+          0,
+          3
+        ),
 
-      europeanAqi: airQuality.europeanAqi?.slice(0, 3),
+      europeanAqi:
+        airQuality.europeanAqi?.slice(
+          0,
+          3
+        ),
 
-      usAqi: airQuality.usAqi?.slice(0, 3),
+      usAqi:
+        airQuality.usAqi?.slice(
+          0,
+          3
+        ),
     };
   }
 
@@ -229,40 +285,56 @@ function createWeatherSummary(weather: any) {
 
     current: current
       ? {
-          temperature: current.temperature,
+          temperature:
+            current.temperature,
 
           apparentTemperature:
             current.apparentTemperature,
 
-          humidity: current.humidity,
+          humidity:
+            current.humidity,
 
-          precipitation: current.precipitation,
+          precipitation:
+            current.precipitation,
 
-          rain: current.rain,
+          rain:
+            current.rain,
 
-          showers: current.showers,
+          showers:
+            current.showers,
 
-          snowfall: current.snowfall,
+          snowfall:
+            current.snowfall,
 
-          weatherCode: current.weatherCode,
+          weatherCode:
+            current.weatherCode,
 
-          windSpeed: current.windSpeed,
+          windSpeed:
+            current.windSpeed,
 
-          windDirection: current.windDirection,
+          windDirection:
+            current.windDirection,
 
-          windGusts: current.windGusts,
+          windGusts:
+            current.windGusts,
 
-          pressure: current.pressure,
+          pressure:
+            current.pressure,
 
-          cloudCover: current.cloudCover,
+          cloudCover:
+            current.cloudCover,
 
-          visibility: current.visibility,
+          visibility:
+            current.visibility,
 
-          uvIndex: current.uvIndex,
+          uvIndex:
+            current.uvIndex,
 
-          isDay: current.isDay,
+          isDay:
+            current.isDay,
 
-          time: current.time,
+          time:
+            current.time,
         }
       : null,
 
@@ -270,7 +342,8 @@ function createWeatherSummary(weather: any) {
 
     daily: dailySummary,
 
-    airQuality: airQualitySummary,
+    airQuality:
+      airQualitySummary,
   };
 }
 
@@ -283,7 +356,8 @@ function createWeatherPrompt(
   weather: any,
   risk: any
 ) {
-  const weatherSummary = createWeatherSummary(weather);
+  const weatherSummary =
+    createWeatherSummary(weather);
 
   return `
 You are WeatherGPT, an intelligent weather and disaster-management assistant.
@@ -369,22 +443,17 @@ IMPORTANT INSTRUCTIONS
 
 12. For current weather questions, use CURRENT WEATHER DATA.
 
-13. For rain questions, use precipitation probability
-and rainfall amount.
+13. For rain questions, use precipitation probability and rainfall amount.
 
-14. For temperature questions, use temperature
-and apparent temperature.
+14. For temperature questions, use temperature and apparent temperature.
 
 15. For wind questions, use wind speed and gusts.
 
-16. For tomorrow/forecast questions, use DAILY
-and NEXT HOURS data.
+16. For tomorrow/forecast questions, use DAILY and NEXT HOURS data.
 
-17. For air-quality questions, use supplied AQI
-and PM values.
+17. For air-quality questions, use supplied AQI and PM values.
 
-18. For safety/disaster questions, use supplied
-risk assessment.
+18. For safety/disaster questions, use supplied risk assessment.
 
 19. If unrelated to weather, answer helpfully.
 
@@ -416,7 +485,7 @@ Allowed language values:
 }
 
 // ============================================================
-// HOME ROUTE
+// HEALTH CHECK
 // ============================================================
 
 app.get("/", (_req, res) => {
@@ -430,6 +499,8 @@ app.get("/", (_req, res) => {
 
 // ============================================================
 // TEXT CHAT API
+// IMPORTANT:
+// Vercel function /api/chat maps to this "/"
 // ============================================================
 
 app.post("/", async (req, res) => {
@@ -441,22 +512,29 @@ app.post("/", async (req, res) => {
       language = "en",
     } = req.body;
 
-    if (!message || typeof message !== "string") {
+    if (
+      !message ||
+      typeof message !== "string"
+    ) {
       return res.status(400).json({
         error: "Message is required",
       });
     }
 
-    console.log("User message:", message);
-
-    const prompt = createWeatherPrompt(
-      message,
-      weather,
-      risk
+    console.log(
+      "User message:",
+      message
     );
 
+    const prompt =
+      createWeatherPrompt(
+        message,
+        weather,
+        risk
+      );
+
     console.log(
-      "Sending compact request to Groq..."
+      "Sending request to Groq..."
     );
 
     const completion =
@@ -499,24 +577,32 @@ app.post("/", async (req, res) => {
     );
 
     const parsed =
-      parseJsonResponse(generatedText);
+      parseJsonResponse(
+        generatedText
+      );
 
     if (parsed) {
       return res.json({
         response:
-          typeof parsed.response === "string"
+          typeof parsed.response ===
+          "string"
             ? parsed.response
             : generatedText,
 
-        language: detectLanguageLabel(
-          parsed.language || language
-        ),
+        language:
+          detectLanguageLabel(
+            parsed.language ||
+              language
+          ),
       });
     }
 
     return res.json({
       response: generatedText,
-      language,
+      language:
+        detectLanguageLabel(
+          language
+        ),
     });
   } catch (error: any) {
     console.error(
@@ -525,7 +611,8 @@ app.post("/", async (req, res) => {
     );
 
     return res.status(500).json({
-      error: "Failed to generate AI response",
+      error:
+        "Failed to generate AI response",
 
       details:
         error?.message ||
@@ -540,7 +627,10 @@ app.post("/", async (req, res) => {
 
 app.post(
   "/api/chat/audio",
-  express.json({ limit: "30mb" }),
+
+  express.json({
+    limit: "30mb",
+  }),
 
   async (req, res) => {
     let tempFilePath = "";
@@ -562,57 +652,80 @@ app.post(
         typeof audio !== "string"
       ) {
         return res.status(400).json({
-          error: "Audio data is required",
+          error:
+            "Audio data is required",
         });
       }
 
       const cleanMimeType =
-        mimeType.split(";")[0].trim();
+        mimeType
+          .split(";")[0]
+          .trim();
 
       console.log(
         `Received voice message. MIME: ${cleanMimeType}`
       );
 
       // ------------------------------------------------------
-      // Determine file extension
+      // Determine extension
       // ------------------------------------------------------
 
       let extension = ".webm";
 
-      if (cleanMimeType.includes("wav")) {
+      if (
+        cleanMimeType.includes(
+          "wav"
+        )
+      ) {
         extension = ".wav";
       } else if (
-        cleanMimeType.includes("mp3")
+        cleanMimeType.includes(
+          "mp3"
+        )
       ) {
         extension = ".mp3";
       } else if (
-        cleanMimeType.includes("mpeg")
+        cleanMimeType.includes(
+          "mpeg"
+        )
       ) {
         extension = ".mp3";
       } else if (
-        cleanMimeType.includes("mp4")
+        cleanMimeType.includes(
+          "mp4"
+        )
       ) {
         extension = ".mp4";
       } else if (
-        cleanMimeType.includes("ogg")
+        cleanMimeType.includes(
+          "ogg"
+        )
       ) {
         extension = ".ogg";
       } else if (
-        cleanMimeType.includes("m4a")
+        cleanMimeType.includes(
+          "m4a"
+        )
       ) {
         extension = ".m4a";
       }
 
       // ------------------------------------------------------
-      // Convert base64 audio to buffer
+      // Convert Base64 audio
       // ------------------------------------------------------
 
       const audioBuffer =
-        Buffer.from(audio, "base64");
+        Buffer.from(
+          audio,
+          "base64"
+        );
 
-      if (!audioBuffer.length) {
+      if (
+        !audioBuffer.length
+      ) {
         return res.status(400).json({
-          error: "Invalid audio data",
+          error:
+            "Invalid audio data",
         });
       }
 
@@ -623,10 +736,11 @@ app.post(
       const fileName =
         `weathergpt-${crypto.randomUUID()}${extension}`;
 
-      tempFilePath = path.join(
-        os.tmpdir(),
-        fileName
-      );
+      tempFilePath =
+        path.join(
+          os.tmpdir(),
+          fileName
+        );
 
       fs.writeFileSync(
         tempFilePath,
@@ -637,32 +751,34 @@ app.post(
         "Temporary audio file created."
       );
 
-      // ======================================================
-      // WHISPER
-      // ======================================================
+      // ------------------------------------------------------
+      // Whisper transcription
+      // ------------------------------------------------------
 
       console.log(
         "Sending audio to Whisper..."
       );
 
       const transcription =
-        await groq.audio.transcriptions.create({
-          file: fs.createReadStream(
-            tempFilePath
-          ),
+        await groq.audio.transcriptions.create(
+          {
+            file:
+              fs.createReadStream(
+                tempFilePath
+              ),
 
-          model: WHISPER_MODEL,
+            model:
+              WHISPER_MODEL,
 
-          response_format: "json",
+            response_format:
+              "json",
 
-          temperature: 0,
+            temperature: 0,
 
-          // IMPORTANT:
-          // Helps Whisper preserve multilingual speech
-          // and Tanglish-style wording.
-          prompt:
-            "The speaker may use English, Tamil, Hindi, Tanglish, or mixed languages. Preserve the speaker's original language and wording as accurately as possible. Do not translate the speech into English. Preserve Tamil and Hindi words when possible.",
-        });
+            prompt:
+              "The speaker may use English, Tamil, Hindi, Tanglish, or mixed languages. Preserve the speaker's original language and wording as accurately as possible. Do not translate the speech into English. Preserve Tamil and Hindi words when possible.",
+          }
+        );
 
       const transcript =
         transcription.text?.trim();
@@ -678,16 +794,18 @@ app.post(
         transcript
       );
 
-      // ======================================================
-      // COMPACT WEATHER DATA
-      // ======================================================
+      // ------------------------------------------------------
+      // Weather summary
+      // ------------------------------------------------------
 
       const weatherSummary =
-        createWeatherSummary(weather);
+        createWeatherSummary(
+          weather
+        );
 
-      // ======================================================
-      // VOICE LANGUAGE-AWARE GPT PROMPT
-      // ======================================================
+      // ------------------------------------------------------
+      // Voice prompt
+      // ------------------------------------------------------
 
       const voicePrompt = `
 You are WeatherGPT, a multilingual voice weather assistant.
@@ -699,12 +817,12 @@ USER VOICE TRANSCRIPT
 "${transcript}"
 
 ==================================================
-LANGUAGE DETECTION
+LANGUAGE
 ==================================================
 
-Identify the language/style from the transcript itself.
+Identify the language/style from the transcript.
 
-Possible language/style:
+Possible styles:
 
 1. English
 2. Tamil
@@ -714,145 +832,67 @@ Possible language/style:
 6. Mixed English + Hindi
 
 ==================================================
-RESPONSE LANGUAGE RULE
+RESPONSE LANGUAGE
 ==================================================
 
-If the transcript is English:
+If English:
 Reply in English.
 
-If the transcript is Tamil:
+If Tamil:
 Reply in Tamil script.
 
-If the transcript is Hindi:
+If Hindi:
 Reply in Hindi script.
 
-If the transcript is Tanglish:
+If Tanglish:
 Reply naturally in Tanglish.
 
-If the transcript mixes English and Tamil:
-Reply in the same mixed English + Tamil style.
+If mixed:
+Reply naturally in the same mixed style.
 
-If the transcript mixes English and Hindi:
-Reply in the same mixed English + Hindi style.
-
-IMPORTANT:
-
-Do NOT translate the user's language into English
-unless the user specifically asks for translation.
-
-The response should sound natural when spoken aloud.
-
-==================================================
-EXAMPLES
-==================================================
-
-English input:
-"What is the weather today?"
-
-Language:
-"en"
-
-Reply:
-"Today's weather is..."
-
---------------------------------------------------
-
-Tamil input:
-"இன்று வானிலை எப்படி இருக்கு?"
-
-Language:
-"ta"
-
-Reply in Tamil script.
-
---------------------------------------------------
-
-Hindi input:
-"आज मौसम कैसा है?"
-
-Language:
-"hi"
-
-Reply in Hindi script.
-
---------------------------------------------------
-
-Tanglish input:
-"Inniku weather epdi irukku?"
-
-Language:
-"tanglish"
-
-Reply naturally in Tanglish.
-
---------------------------------------------------
-
-Mixed input:
-"Inniku weather எப்படி இருக்கு?"
-
-Language:
-"mixed"
-
-Reply naturally using the same mixed style.
+Do NOT translate the user's language into English unless requested.
 
 ==================================================
 CURRENT WEATHER DATA
 ==================================================
 
-${JSON.stringify(weatherSummary)}
+${JSON.stringify(
+  weatherSummary
+)}
 
 ==================================================
-WEATHER RISK ASSESSMENT
+WEATHER RISK
 ==================================================
 
-${JSON.stringify(risk ?? null)}
+${JSON.stringify(
+  risk ?? null
+)}
 
 ==================================================
-WEATHER RULES
+RULES
 ==================================================
 
-1. Use supplied weather data whenever relevant.
+1. Use supplied weather data.
 
 2. NEVER invent weather values.
 
 3. NEVER invent official government warnings.
 
-4. Do not describe an AI risk assessment
-as an official government warning.
+4. Do not describe AI risk assessment as an official warning.
 
-5. If there is a weather risk, provide simple
-and practical safety advice.
+5. Provide practical safety advice when appropriate.
 
-6. If weather data is insufficient,
-clearly say so.
+6. Keep the answer concise.
 
-7. Keep the response concise.
+7. If weather data is insufficient, say so.
 
-8. For current weather questions, use current data.
-
-9. For rain questions, use precipitation data.
-
-10. For temperature questions, use temperature
-and apparent temperature.
-
-11. For wind questions, use wind speed and gusts.
-
-12. For forecast questions, use daily and hourly data.
-
-13. For air-quality questions, use AQI and PM values.
-
-14. If the transcript is unclear, explain briefly
-that the voice message was not fully understood.
-
-15. Do not use markdown tables.
+8. Do not use markdown tables.
 
 ==================================================
 OUTPUT
 ==================================================
 
 Return ONLY valid JSON.
-
-Use exactly:
 
 {
   "language": "en",
@@ -868,12 +908,12 @@ Allowed language values:
 "mixed"
 `;
 
-      // ======================================================
-      // GPT RESPONSE
-      // ======================================================
+      // ------------------------------------------------------
+      // Groq response
+      // ------------------------------------------------------
 
       console.log(
-        "Sending multilingual voice transcript to GPT..."
+        "Sending voice transcript to Groq..."
       );
 
       const completion =
@@ -883,14 +923,14 @@ Allowed language values:
           messages: [
             {
               role: "system",
-
               content:
-                "You are WeatherGPT. You are a multilingual voice assistant. Preserve the user's language and style. Use only the supplied weather information for weather facts.",
+                "You are WeatherGPT. You are a multilingual voice assistant. Preserve the user's language and style. Use only supplied weather information for weather facts.",
             },
 
             {
               role: "user",
-              content: voicePrompt,
+              content:
+                voicePrompt,
             },
           ],
 
@@ -912,57 +952,42 @@ Allowed language values:
         );
       }
 
-      console.log(
-        "Voice AI response generated successfully."
-      );
-
-      // ======================================================
-      // PARSE RESPONSE
-      // ======================================================
-
       const parsed =
-        parseJsonResponse(generatedText);
+        parseJsonResponse(
+          generatedText
+        );
 
       if (parsed) {
         const detectedLanguage =
           detectLanguageLabel(
-            parsed.language || "en"
+            parsed.language ||
+              "en"
           );
 
         const responseText =
-          typeof parsed.response === "string"
+          typeof parsed.response ===
+          "string"
             ? parsed.response
             : generatedText;
-
-        console.log(
-          "Detected voice language:",
-          detectedLanguage
-        );
-
-        console.log(
-          "Voice response:",
-          responseText
-        );
 
         return res.json({
           transcript,
 
-          language: detectedLanguage,
+          language:
+            detectedLanguage,
 
-          response: responseText,
+          response:
+            responseText,
         });
       }
-
-      // ======================================================
-      // FALLBACK
-      // ======================================================
 
       return res.json({
         transcript,
 
         language: "en",
 
-        response: generatedText,
+        response:
+          generatedText,
       });
     } catch (error: any) {
       console.error(
@@ -979,21 +1004,19 @@ Allowed language values:
           "Unknown Groq voice API error",
       });
     } finally {
-      // ======================================================
-      // DELETE TEMP AUDIO FILE
-      // ======================================================
+      // ------------------------------------------------------
+      // Delete temporary file
+      // ------------------------------------------------------
 
       if (
         tempFilePath &&
-        fs.existsSync(tempFilePath)
+        fs.existsSync(
+          tempFilePath
+        )
       ) {
         try {
           fs.unlinkSync(
             tempFilePath
-          );
-
-          console.log(
-            "Temporary audio file deleted."
           );
         } catch (cleanupError) {
           console.error(
@@ -1007,24 +1030,32 @@ Allowed language values:
 );
 
 // ============================================================
-// START SERVER
+// LOCAL DEVELOPMENT
+// Vercel does NOT run app.listen()
 // ============================================================
 
-console.log(
-  "Starting WeatherGPT server..."
-);
-
-app.listen(PORT, () => {
+if (process.env.VERCEL !== "1") {
   console.log(
-    `WeatherGPT API running at http://localhost:${PORT}`
+    "Starting WeatherGPT server..."
   );
 
-  console.log(
-    `AI model: ${AI_MODEL}`
-  );
+  app.listen(PORT, () => {
+    console.log(
+      `WeatherGPT API running at http://localhost:${PORT}`
+    );
 
-  console.log(
-    `Whisper model: ${WHISPER_MODEL}`
-  );
-});
+    console.log(
+      `AI model: ${AI_MODEL}`
+    );
+
+    console.log(
+      `Whisper model: ${WHISPER_MODEL}`
+    );
+  });
+}
+
+// ============================================================
+// VERCEL EXPORT
+// ============================================================
+
 export default app;
