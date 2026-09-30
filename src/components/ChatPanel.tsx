@@ -447,7 +447,7 @@ export function ChatPanel({
            */
           const response =
             await fetch(
-              'http://localhost:3001/api/chat/audio',
+              '/api/chat/audio',
               {
                 method: 'POST',
                 headers: {
@@ -858,7 +858,7 @@ export function ChatPanel({
     try {
       const response =
         await fetch(
-          'http://localhost:3001/api/chat',
+          '/api/chat',
           {
             method: 'POST',
 

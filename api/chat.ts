@@ -432,7 +432,7 @@ app.get("/", (_req, res) => {
 // TEXT CHAT API
 // ============================================================
 
-app.post("/api/chat", async (req, res) => {
+app.post("/", async (req, res) => {
   try {
     const {
       message,
@@ -1027,3 +1027,4 @@ app.listen(PORT, () => {
     `Whisper model: ${WHISPER_MODEL}`
   );
 });
+export default app;
