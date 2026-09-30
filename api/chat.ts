@@ -21,164 +21,117 @@ function weatherSummary(weather: any) {
           apparentTemperature:
             weather.current.apparentTemperature,
           humidity: weather.current.humidity,
-          precipitation:
-            weather.current.precipitation,
+          precipitation: weather.current.precipitation,
           rain: weather.current.rain,
           showers: weather.current.showers,
-          weatherCode:
-            weather.current.weatherCode,
-          windSpeed:
-            weather.current.windSpeed,
-          windGusts:
-            weather.current.windGusts,
-          pressure:
-            weather.current.pressure,
-          cloudCover:
-            weather.current.cloudCover,
-          visibility:
-            weather.current.visibility,
-          uvIndex:
-            weather.current.uvIndex,
+          weatherCode: weather.current.weatherCode,
+          windSpeed: weather.current.windSpeed,
+          windGusts: weather.current.windGusts,
+          pressure: weather.current.pressure,
+          cloudCover: weather.current.cloudCover,
+          visibility: weather.current.visibility,
+          uvIndex: weather.current.uvIndex,
         }
       : null,
 
     daily: weather.daily
       ? {
-          time:
-            weather.daily.time?.slice(0, 3),
-
-          weatherCode:
-            weather.daily.weatherCode?.slice(0, 3),
-
-          tempMax:
-            weather.daily.tempMax?.slice(0, 3),
-
-          tempMin:
-            weather.daily.tempMin?.slice(0, 3),
-
+          time: weather.daily.time?.slice(0, 3),
+          weatherCode: weather.daily.weatherCode?.slice(0, 3),
+          tempMax: weather.daily.tempMax?.slice(0, 3),
+          tempMin: weather.daily.tempMin?.slice(0, 3),
           precipitationProbability:
-            weather.daily.precipitationProbability?.slice(
-              0,
-              3
-            ),
-
+            weather.daily.precipitationProbability?.slice(0, 3),
           precipitationSum:
-            weather.daily.precipitationSum?.slice(
-              0,
-              3
-            ),
-
+            weather.daily.precipitationSum?.slice(0, 3),
           windSpeedMax:
-            weather.daily.windSpeedMax?.slice(
-              0,
-              3
-            ),
-
+            weather.daily.windSpeedMax?.slice(0, 3),
           windGustsMax:
-            weather.daily.windGustsMax?.slice(
-              0,
-              3
-            ),
+            weather.daily.windGustsMax?.slice(0, 3),
         }
       : null,
 
     hourly: weather.hourly
       ? {
-          time:
-            weather.hourly.time?.slice(0, 6),
-
+          time: weather.hourly.time?.slice(0, 6),
           temperature:
-            weather.hourly.temperature?.slice(
-              0,
-              6
-            ),
-
+            weather.hourly.temperature?.slice(0, 6),
           precipitationProbability:
-            weather.hourly
-              .precipitationProbability
-              ?.slice(0, 6),
-
+            weather.hourly.precipitationProbability?.slice(0, 6),
           precipitation:
-            weather.hourly.precipitation?.slice(
-              0,
-              6
-            ),
-
+            weather.hourly.precipitation?.slice(0, 6),
           windSpeed:
-            weather.hourly.windSpeed?.slice(
-              0,
-              6
-            ),
-
+            weather.hourly.windSpeed?.slice(0, 6),
           windGusts:
-            weather.hourly.windGusts?.slice(
-              0,
-              6
-            ),
+            weather.hourly.windGusts?.slice(0, 6),
         }
       : null,
 
     airQuality: weather.airQuality
       ? {
-          pm10:
-            weather.airQuality.pm10?.slice(
-              0,
-              3
-            ),
-
-          pm2_5:
-            weather.airQuality.pm2_5?.slice(
-              0,
-              3
-            ),
-
+          pm10: weather.airQuality.pm10?.slice(0, 3),
+          pm2_5: weather.airQuality.pm2_5?.slice(0, 3),
           europeanAqi:
-            weather.airQuality.europeanAqi?.slice(
-              0,
-              3
-            ),
-
+            weather.airQuality.europeanAqi?.slice(0, 3),
           usAqi:
-            weather.airQuality.usAqi?.slice(
-              0,
-              3
-            ),
+            weather.airQuality.usAqi?.slice(0, 3),
         }
       : null,
   };
 }
 
 function detectLanguage(language: string) {
-  const allowed = [
-    "en",
-    "ta",
-    "hi",
-    "tanglish",
-    "mixed",
-  ];
+  const value = String(language || "")
+    .toLowerCase()
+    .trim();
 
-  return allowed.includes(language)
-    ? language
-    : "en";
+  if (
+    value === "ta" ||
+    value.includes("tamil")
+  ) {
+    return "ta";
+  }
+
+  if (
+    value === "hi" ||
+    value.includes("hindi")
+  ) {
+    return "hi";
+  }
+
+  if (
+    value.includes("tanglish")
+  ) {
+    return "tanglish";
+  }
+
+  if (
+    value.includes("mixed")
+  ) {
+    return "mixed";
+  }
+
+  return "en";
 }
 
-export async function POST(
-  request: Request
-) {
-  try {
-    // --------------------------------------------------------
-    // Check API key
-    // --------------------------------------------------------
+function detectScript(text: string) {
+  if (/[\u0B80-\u0BFF]/.test(text)) {
+    return "ta";
+  }
 
+  if (/[\u0900-\u097F]/.test(text)) {
+    return "hi";
+  }
+
+  return null;
+}
+
+export async function POST(request: Request) {
+  try {
     const apiKey =
-      (globalThis as any).process?.env
-        ?.GROQ_API_KEY;
+      (globalThis as any).process?.env?.GROQ_API_KEY;
 
     if (!apiKey) {
-      console.error(
-        "GROQ_API_KEY is missing in Vercel"
-      );
-
       return Response.json(
         {
           error:
@@ -188,27 +141,13 @@ export async function POST(
       );
     }
 
-    // --------------------------------------------------------
-    // Read request
-    // --------------------------------------------------------
-
     const body = await request.json();
 
-    const message =
-      body?.message;
-
-    const weather =
-      body?.weather;
-
-    const risk =
-      body?.risk ?? null;
-
+    const message = body?.message;
+    const weather = body?.weather;
+    const risk = body?.risk ?? null;
     const requestedLanguage =
       body?.language ?? "en";
-
-    // --------------------------------------------------------
-    // Validate message
-    // --------------------------------------------------------
 
     if (
       !message ||
@@ -216,38 +155,35 @@ export async function POST(
     ) {
       return Response.json(
         {
-          error:
-            "Message is required",
+          error: "Message is required",
         },
         { status: 400 }
       );
     }
 
-    console.log(
-      "WeatherGPT user message:",
-      message
-    );
-
-    // --------------------------------------------------------
-    // Prepare compact weather data
-    // --------------------------------------------------------
-
     const compactWeather =
       weatherSummary(weather);
 
-    // --------------------------------------------------------
-    // Prompt
-    // --------------------------------------------------------
+    /*
+     * If the actual message contains Tamil/Hindi
+     * script, trust the message over the UI selector.
+     */
+    const scriptLanguage =
+      detectScript(message);
+
+    const language =
+      scriptLanguage ||
+      detectLanguage(requestedLanguage);
 
     const prompt = `
-You are WeatherGPT, an intelligent weather
-and disaster-management assistant.
+You are WeatherGPT, an intelligent
+weather and disaster-management assistant.
 
 USER MESSAGE:
 ${message}
 
-USER PREFERRED LANGUAGE:
-${requestedLanguage}
+USER LANGUAGE:
+${language}
 
 CURRENT WEATHER DATA:
 ${JSON.stringify(
@@ -263,69 +199,74 @@ ${JSON.stringify(
   2
 )}
 
-IMPORTANT RULES:
+LANGUAGE REQUIREMENTS:
 
-1. Understand exactly what the user asks.
+1. You MUST reply in the same language and
+style as the user.
 
-2. Use the supplied weather data whenever
-   the question is related to weather.
+2. If USER LANGUAGE is "ta", reply completely
+in Tamil.
 
-3. NEVER invent weather values.
+3. If USER LANGUAGE is "hi", reply completely
+in Hindi.
 
-4. NEVER invent official government warnings.
+4. If USER LANGUAGE is "en", reply in English.
 
-5. Never describe an AI-generated risk assessment
-   as an official government warning.
+5. If USER LANGUAGE is "tanglish", reply in
+Tanglish using natural Tamil words written
+in English letters.
 
-6. For rain questions, use precipitation
-   probability and precipitation amount.
+6. If USER LANGUAGE is "mixed", preserve the
+user's mixture of English and Tamil/Hindi.
 
-7. For temperature questions, use temperature
-   and apparent temperature.
+7. NEVER automatically translate a Tamil,
+Hindi or Tanglish question into English.
 
-8. For wind questions, use wind speed and gusts.
+8. Do not change Tanglish into formal Tamil
+unless the user asks for it.
 
-9. For tomorrow or forecast questions,
-   use the supplied daily forecast.
+9. Keep the response natural and conversational.
 
-10. For air quality questions,
-    use the supplied AQ data.
+WEATHER RULES:
 
-11. If the supplied data is insufficient,
-    clearly tell the user.
+1. Use supplied weather data for weather questions.
 
-12. If the question is unrelated to weather,
-    answer helpfully.
+2. NEVER invent weather values.
 
-13. Keep the answer concise.
+3. NEVER invent official government warnings.
 
-14. Reply in the same language/style as
-    the user's message.
+4. Never describe an AI risk assessment as an
+official government warning.
 
-Language options:
+5. For rain questions, use precipitation
+probability and precipitation amount.
 
-en = English
-ta = Tamil
-hi = Hindi
-tanglish = Tanglish
-mixed = Mixed language
+6. For temperature questions, use temperature
+and apparent temperature.
+
+7. For wind questions, use wind speed and gusts.
+
+8. For forecast questions, use daily/hourly data.
+
+9. For air-quality questions, use AQ data.
+
+10. If data is insufficient, clearly say so.
+
+11. If unrelated to weather, answer helpfully.
+
+12. Keep the answer concise.
 
 Return ONLY valid JSON:
 
 {
-  "language": "en",
-  "response": "your answer"
+  "language": "${language}",
+  "response": "answer in the required language"
 }
 `;
 
-    // --------------------------------------------------------
-    // Groq
-    // --------------------------------------------------------
-
-    const groq =
-      new Groq({
-        apiKey,
-      });
+    const groq = new Groq({
+      apiKey,
+    });
 
     const completion =
       await groq.chat.completions.create({
@@ -335,9 +276,8 @@ Return ONLY valid JSON:
           {
             role: "system",
             content:
-              "You are WeatherGPT. Give concise, accurate weather assistance using only supplied weather data.",
+              "You are WeatherGPT. Always follow the user's requested language and never unnecessarily switch to English.",
           },
-
           {
             role: "user",
             content: prompt,
@@ -364,49 +304,30 @@ Return ONLY valid JSON:
       );
     }
 
-    // --------------------------------------------------------
-    // Parse AI JSON
-    // --------------------------------------------------------
-
     let parsed: any;
 
     try {
-      parsed =
-        JSON.parse(content);
+      parsed = JSON.parse(content);
     } catch {
       parsed = {
-        language:
-          requestedLanguage,
-
-        response:
-          content,
+        language,
+        response: content,
       };
     }
 
     const responseText =
-      typeof parsed.response ===
-      "string"
+      typeof parsed.response === "string"
         ? parsed.response
         : content;
 
     const responseLanguage =
       detectLanguage(
-        typeof parsed.language ===
-          "string"
-          ? parsed.language
-          : requestedLanguage
+        parsed.language || language
       );
 
-    console.log(
-      "WeatherGPT response generated."
-    );
-
     return Response.json({
-      response:
-        responseText,
-
-      language:
-        responseLanguage,
+      response: responseText,
+      language: responseLanguage,
     });
   } catch (error: any) {
     console.error(
@@ -418,7 +339,6 @@ Return ONLY valid JSON:
       {
         error:
           "Failed to generate AI response",
-
         details:
           error?.message ||
           "Unknown server error",
@@ -429,10 +349,6 @@ Return ONLY valid JSON:
     );
   }
 }
-
-// ------------------------------------------------------------
-// GET health check
-// ------------------------------------------------------------
 
 export async function GET() {
   return Response.json({

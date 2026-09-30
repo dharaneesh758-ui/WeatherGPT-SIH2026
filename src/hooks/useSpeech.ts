@@ -55,23 +55,13 @@ const LANGUAGE_CONFIG: Record<
   hi: {
     preferred: [
       'hi-IN',
+      'hi',
     ],
     fallback: ['hi'],
     rate: 0.92,
     pitch: 1,
   },
 
-  /*
-   * Tanglish is Tamil written using English
-   * characters.
-   *
-   * Most browser TTS engines don't have a
-   * dedicated Tanglish voice.
-   *
-   * Tamil voice can pronounce many Tanglish
-   * words poorly, so en-IN is generally a
-   * safer fallback.
-   */
   tanglish: {
     preferred: [
       'en-IN',
@@ -82,21 +72,15 @@ const LANGUAGE_CONFIG: Record<
     pitch: 1,
   },
 
-  /*
-   * Mixed Tamil + English.
-   *
-   * Browser TTS cannot dynamically switch
-   * voices inside one utterance reliably.
-   *
-   * We therefore use Indian English as the
-   * fallback voice.
-   */
   mixed: {
     preferred: [
       'en-IN',
       'ta-IN',
     ],
-    fallback: ['en', 'ta'],
+    fallback: [
+      'en',
+      'ta',
+    ],
     rate: 0.92,
     pitch: 1,
   },
@@ -117,33 +101,26 @@ function findBestVoice(
   const config =
     LANGUAGE_CONFIG[language];
 
-  /*
-   * -------------------------------------------------------
-   * 1. Exact language match
-   * -------------------------------------------------------
-   */
+  /* -------------------------------------------------------
+     1. Exact match
+  ------------------------------------------------------- */
 
   for (const preferred of config.preferred) {
-    const exact = voices.find(
-      (voice) =>
-        voice.lang.toLowerCase() ===
-        preferred.toLowerCase()
-    );
+    const exact =
+      voices.find(
+        (voice) =>
+          voice.lang.toLowerCase() ===
+          preferred.toLowerCase()
+      );
 
     if (exact) {
       return exact;
     }
   }
 
-  /*
-   * -------------------------------------------------------
-   * 2. Language prefix match
-   *
-   * ta-IN -> ta
-   * hi-IN -> hi
-   * en-IN -> en
-   * -------------------------------------------------------
-   */
+  /* -------------------------------------------------------
+     2. Prefix match
+  ------------------------------------------------------- */
 
   for (const preferred of config.preferred) {
     const prefix =
@@ -151,23 +128,22 @@ function findBestVoice(
         .split('-')[0]
         .toLowerCase();
 
-    const partial = voices.find(
-      (voice) =>
-        voice.lang
-          .toLowerCase()
-          .startsWith(prefix)
-    );
+    const partial =
+      voices.find(
+        (voice) =>
+          voice.lang
+            .toLowerCase()
+            .startsWith(prefix)
+      );
 
     if (partial) {
       return partial;
     }
   }
 
-  /*
-   * -------------------------------------------------------
-   * 3. Fallback language match
-   * -------------------------------------------------------
-   */
+  /* -------------------------------------------------------
+     3. Fallback
+  ------------------------------------------------------- */
 
   for (const fallback of config.fallback) {
     const prefix =
@@ -188,12 +164,6 @@ function findBestVoice(
     }
   }
 
-  /*
-   * -------------------------------------------------------
-   * 4. No matching voice
-   * -------------------------------------------------------
-   */
-
   return null;
 }
 
@@ -211,13 +181,19 @@ export function useSpeech(
     useState(false);
 
   const [voices, setVoices] =
-    useState<SpeechSynthesisVoice[]>([]);
+    useState<
+      SpeechSynthesisVoice[]
+    >([]);
 
   const mediaRecorderRef =
-    useRef<MediaRecorder | null>(null);
+    useRef<MediaRecorder | null>(
+      null
+    );
 
   const mediaStreamRef =
-    useRef<MediaStream | null>(null);
+    useRef<MediaStream | null>(
+      null
+    );
 
   const audioChunksRef =
     useRef<Blob[]>([]);
@@ -232,7 +208,7 @@ export function useSpeech(
     useRef(options.onError);
 
   /* =======================================================
-     KEEP CALLBACKS UPDATED
+     CALLBACK REFERENCES
   ======================================================= */
 
   useEffect(() => {
@@ -255,7 +231,8 @@ export function useSpeech(
       typeof navigator !==
         'undefined' &&
       !!navigator.mediaDevices &&
-      typeof navigator.mediaDevices
+      typeof navigator
+        .mediaDevices
         .getUserMedia ===
         'function' &&
       typeof MediaRecorder !==
@@ -266,6 +243,18 @@ export function useSpeech(
     );
 
     return () => {
+      if (
+        maxDurationRef.current !==
+        null
+      ) {
+        window.clearTimeout(
+          maxDurationRef.current
+        );
+
+        maxDurationRef.current =
+          null;
+      }
+
       try {
         if (
           mediaRecorderRef.current
@@ -274,7 +263,7 @@ export function useSpeech(
           mediaRecorderRef.current.stop();
         }
       } catch {
-        // Safe cleanup
+        // Safe cleanup.
       }
 
       mediaStreamRef.current
@@ -283,13 +272,11 @@ export function useSpeech(
           track.stop();
         });
 
-      if (
-        maxDurationRef.current
-      ) {
-        window.clearTimeout(
-          maxDurationRef.current
-        );
-      }
+      mediaStreamRef.current =
+        null;
+
+      mediaRecorderRef.current =
+        null;
     };
   }, []);
 
@@ -306,8 +293,10 @@ export function useSpeech(
     }
 
     if (
-      !('speechSynthesis' in
-        window)
+      !(
+        'speechSynthesis' in
+        window
+      )
     ) {
       return;
     }
@@ -320,7 +309,7 @@ export function useSpeech(
       setVoices(available);
 
       console.log(
-        '🔊 Available browser voices:',
+        '🔊 Browser voices:',
         available.map(
           (voice) =>
             `${voice.name} (${voice.lang})`
@@ -328,9 +317,6 @@ export function useSpeech(
       );
     };
 
-    /*
-     * Chrome loads voices asynchronously.
-     */
     loadVoices();
 
     window.speechSynthesis.addEventListener(
@@ -347,7 +333,7 @@ export function useSpeech(
   }, []);
 
   /* =======================================================
-     START MICROPHONE
+     START LISTENING
   ======================================================= */
 
   const startListening =
@@ -358,9 +344,10 @@ export function useSpeech(
 
       if (
         typeof navigator ===
-        'undefined' ||
+          'undefined' ||
         !navigator.mediaDevices ||
-        typeof navigator.mediaDevices
+        typeof navigator
+          .mediaDevices
           .getUserMedia !==
           'function'
       ) {
@@ -372,13 +359,20 @@ export function useSpeech(
       }
 
       try {
-        /*
-         * Request microphone.
-         */
+        /* -------------------------------------------------
+           Clear old audio
+        ------------------------------------------------- */
+
+        audioChunksRef.current =
+          [];
+
+        /* -------------------------------------------------
+           Request microphone
+        ------------------------------------------------- */
 
         const stream =
-          await navigator.mediaDevices
-            .getUserMedia({
+          await navigator.mediaDevices.getUserMedia(
+            {
               audio: {
                 echoCancellation:
                   true,
@@ -389,25 +383,17 @@ export function useSpeech(
                 autoGainControl:
                   true,
 
-                /*
-                 * Ask browser for good
-                 * speech quality.
-                 */
                 channelCount: 1,
-
-                sampleRate: 48000,
               },
-            });
+            }
+          );
 
         mediaStreamRef.current =
           stream;
 
-        audioChunksRef.current =
-          [];
-
-        /*
-         * Select best recording format.
-         */
+        /* -------------------------------------------------
+           Choose supported MIME type
+        ------------------------------------------------- */
 
         let mimeType = '';
 
@@ -434,6 +420,16 @@ export function useSpeech(
             'audio/mp4';
         }
 
+        console.log(
+          '🎙️ Recording MIME type:',
+          mimeType ||
+            'browser default'
+        );
+
+        /* -------------------------------------------------
+           Create recorder
+        ------------------------------------------------- */
+
         const recorder =
           mimeType
             ? new MediaRecorder(
@@ -449,9 +445,9 @@ export function useSpeech(
         mediaRecorderRef.current =
           recorder;
 
-        /* =================================================
-           AUDIO DATA
-        ================================================= */
+        /* -------------------------------------------------
+           Audio chunks
+        ------------------------------------------------- */
 
         recorder.ondataavailable =
           (
@@ -467,9 +463,9 @@ export function useSpeech(
             }
           };
 
-        /* =================================================
-           RECORDING STOP
-        ================================================= */
+        /* -------------------------------------------------
+           Recording stop
+        ------------------------------------------------- */
 
         recorder.onstop = () => {
           const finalMimeType =
@@ -481,16 +477,21 @@ export function useSpeech(
             new Blob(
               audioChunksRef.current,
               {
-                type: finalMimeType,
+                type:
+                  finalMimeType,
               }
             );
+
+          console.log(
+            '🎤 Final audio:',
+            finalMimeType,
+            audioBlob.size
+          );
 
           audioChunksRef.current =
             [];
 
-          /*
-           * Stop microphone tracks.
-           */
+          /* Stop microphone */
 
           mediaStreamRef.current
             ?.getTracks()
@@ -506,9 +507,7 @@ export function useSpeech(
           mediaRecorderRef.current =
             null;
 
-          /*
-           * Send audio to ChatPanel.
-           */
+          /* Send audio */
 
           if (
             audioBlob.size > 0
@@ -516,14 +515,22 @@ export function useSpeech(
             onAudioRef.current?.(
               audioBlob
             );
+          } else {
+            onErrorRef.current?.(
+              'No audio was recorded. Please try again.'
+            );
           }
         };
 
-        /* =================================================
-           RECORDING ERROR
-        ================================================= */
+        /* -------------------------------------------------
+           Recording error
+        ------------------------------------------------- */
 
         recorder.onerror = () => {
+          console.error(
+            '❌ MediaRecorder error'
+          );
+
           setListening(false);
 
           onErrorRef.current?.(
@@ -545,31 +552,38 @@ export function useSpeech(
             null;
         };
 
-        /* =================================================
-           START
-        ================================================= */
+        /* -------------------------------------------------
+           Start recording
+        ------------------------------------------------- */
 
-        recorder.start(
-          250
-        );
+        recorder.start(250);
 
         setListening(true);
 
-        /*
-         * Maximum recording time:
-         * 20 seconds.
-         */
+        console.log(
+          '🎙️ Recording started'
+        );
+
+        /* -------------------------------------------------
+           Maximum 20 seconds
+        ------------------------------------------------- */
 
         maxDurationRef.current =
           window.setTimeout(
             () => {
+              const currentRecorder =
+                mediaRecorderRef.current;
+
               if (
-                mediaRecorderRef
-                  .current
-                  ?.state ===
-                'recording'
+                currentRecorder &&
+                currentRecorder.state ===
+                  'recording'
               ) {
-                mediaRecorderRef.current.stop();
+                console.log(
+                  '⏱️ Maximum recording duration reached.'
+                );
+
+                currentRecorder.stop();
 
                 setListening(
                   false
@@ -580,11 +594,25 @@ export function useSpeech(
           );
       } catch (error) {
         console.error(
-          'Microphone error:',
+          '❌ Microphone error:',
           error
         );
 
         setListening(false);
+
+        mediaStreamRef.current
+          ?.getTracks()
+          .forEach(
+            (track) => {
+              track.stop();
+            }
+          );
+
+        mediaStreamRef.current =
+          null;
+
+        mediaRecorderRef.current =
+          null;
 
         onErrorRef.current?.(
           'Microphone permission was denied or the microphone is unavailable.'
@@ -593,13 +621,14 @@ export function useSpeech(
     }, [listening]);
 
   /* =======================================================
-     STOP MICROPHONE
+     STOP LISTENING
   ======================================================= */
 
   const stopListening =
     useCallback(() => {
       if (
-        maxDurationRef.current
+        maxDurationRef.current !==
+        null
       ) {
         window.clearTimeout(
           maxDurationRef.current
@@ -617,16 +646,12 @@ export function useSpeech(
         recorder.state ===
           'recording'
       ) {
+        console.log(
+          '🛑 Stopping recording...'
+        );
+
         recorder.stop();
       }
-
-      /*
-       * Don't immediately destroy the
-       * stream before onstop finishes.
-       *
-       * This avoids cutting the final
-       * audio chunk in some browsers.
-       */
 
       setListening(false);
     }, []);
@@ -663,18 +688,11 @@ export function useSpeech(
           return;
         }
 
-        /*
-         * Stop existing speech.
-         */
+        /* Stop previous speech */
 
         window.speechSynthesis.cancel();
 
-        /*
-         * Get latest voices.
-         *
-         * Browser can load voices after
-         * React component mounted.
-         */
+        /* Get latest voices */
 
         const currentVoices =
           window.speechSynthesis
@@ -685,9 +703,7 @@ export function useSpeech(
             ? currentVoices
             : voices;
 
-        /*
-         * Find language-specific voice.
-         */
+        /* Find voice */
 
         const selectedVoice =
           findBestVoice(
@@ -695,9 +711,7 @@ export function useSpeech(
             language
           );
 
-        /*
-         * Create utterance.
-         */
+        /* Create utterance */
 
         const utterance =
           new SpeechSynthesisUtterance(
@@ -709,46 +723,39 @@ export function useSpeech(
             language
           ];
 
-        /*
-         * Language code.
-         */
+        /* -------------------------------------------------
+           Language
+        ------------------------------------------------- */
 
-        if (
-          language === 'ta'
-        ) {
-          utterance.lang =
-            'ta-IN';
-        } else if (
-          language === 'hi'
-        ) {
-          utterance.lang =
-            'hi-IN';
-        } else if (
-          language ===
-          'tanglish'
-        ) {
-          utterance.lang =
-            'en-IN';
-        } else if (
-          language === 'mixed'
-        ) {
-          /*
-           * Mixed text is generally
-           * safer with Indian English.
-           */
-          utterance.lang =
-            'en-IN';
-        } else {
-          utterance.lang =
-            'en-IN';
+        switch (language) {
+          case 'ta':
+            utterance.lang =
+              'ta-IN';
+            break;
+
+          case 'hi':
+            utterance.lang =
+              'hi-IN';
+            break;
+
+          case 'tanglish':
+            utterance.lang =
+              'en-IN';
+            break;
+
+          case 'mixed':
+            utterance.lang =
+              'en-IN';
+            break;
+
+          default:
+            utterance.lang =
+              'en-IN';
         }
 
-        /*
-         * Explicitly assign selected voice.
-         *
-         * THIS is the important fix for
-         * Tamil/Hindi speech.
-         */
+        /* -------------------------------------------------
+           Voice
+        ------------------------------------------------- */
 
         if (selectedVoice) {
           utterance.voice =
@@ -761,13 +768,13 @@ export function useSpeech(
           );
         } else {
           console.warn(
-            `No matching voice found for ${language}. Browser will use its default voice.`
+            `No browser voice found for ${language}.`
           );
         }
 
-        /*
-         * Natural speech settings.
-         */
+        /* -------------------------------------------------
+           Speech settings
+        ------------------------------------------------- */
 
         utterance.rate =
           config.rate;
@@ -777,18 +784,16 @@ export function useSpeech(
 
         utterance.volume = 1;
 
-        /* =================================================
-           SPEECH EVENTS
-        ================================================= */
+        /* -------------------------------------------------
+           Events
+        ------------------------------------------------- */
 
         utterance.onstart =
           () => {
             console.log(
-              `🔊 Speaking in: ${language}`
-            );
-
-            console.log(
-              `🌐 Voice language: ${utterance.lang}`
+              '🔊 Speech started:',
+              language,
+              utterance.lang
             );
           };
 
@@ -802,17 +807,14 @@ export function useSpeech(
         utterance.onerror =
           (event) => {
             console.warn(
-              'Speech synthesis error:',
+              '⚠️ Speech synthesis error:',
               event.error
             );
           };
 
-        /*
-         * Chrome sometimes fails when speak()
-         * is called immediately after cancel().
-         *
-         * Tiny delay improves reliability.
-         */
+        /* -------------------------------------------------
+           Speak
+        ------------------------------------------------- */
 
         window.setTimeout(
           () => {
@@ -820,7 +822,7 @@ export function useSpeech(
               utterance
             );
           },
-          80
+          100
         );
       },
       [voices]
@@ -839,11 +841,6 @@ export function useSpeech(
           window
       ) {
         window.speechSynthesis.cancel();
-
-        /*
-         * Some browsers leave the speech
-         * engine paused.
-         */
 
         if (
           window.speechSynthesis
@@ -868,9 +865,6 @@ export function useSpeech(
     speak,
     stopSpeaking,
 
-    /*
-     * Useful for debugging.
-     */
     voices,
   };
 }
